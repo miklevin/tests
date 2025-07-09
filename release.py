@@ -207,6 +207,7 @@ class TestsReleaseManager:
         self.dry_run = dry_run
         
         self.log_message("🎯 Starting AI-assisted commit process...", "INFO")
+        self.log_message(f"📁 Working in repository: {self.tests_dir.name} ({self.tests_dir})", "INFO")
         
         # Auto-stage changes
         if not self.auto_stage_changes():
