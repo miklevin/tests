@@ -677,10 +677,30 @@ def main():
     Phase 1: Manual exploration with simple numeric interface
     Phase 2: Automated binary search with -N days syntax
     """
+    # Pre-process sys.argv to handle flexible -N syntax (e.g., -2, -3, -14, etc.)
+    processed_args = []
+    i = 0
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        
+        # Check if this is a negative number pattern like -2, -3, -14
+        if (arg.startswith('-') and len(arg) > 1 and 
+            arg[1:].isdigit() and arg not in ['-0', '-1', '-7', '-30']):
+            # Convert -N to --days-ago N
+            days_num = arg[1:]  # Remove the minus sign
+            processed_args.extend(['--days-ago', days_num])
+        else:
+            processed_args.append(arg)
+        i += 1
+    
+    # Replace sys.argv temporarily for argparse
+    original_argv = sys.argv[:]
+    sys.argv = processed_args
+    
     parser = argparse.ArgumentParser(
-        description="Survivable Test Harness with Two-Phase Bug Hunting",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+            description="Survivable Test Harness with Two-Phase Bug Hunting",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
 🔍 TWO-PHASE BUG HUNTING WORKFLOW:
 
 PHASE 1: Manual Exploration (find rough boundaries)
@@ -690,9 +710,11 @@ PHASE 1: Manual Exploration (find rough boundaries)
   python tests.py restore   # Return to original commit
 
 PHASE 2: Automated Binary Search (precise hunting)
+  python tests.py -2        # Binary search 2 days back  
   python tests.py -7        # Binary search 7 days back
+  python tests.py -14       # Binary search 14 days back
   python tests.py -30       # Binary search 30 days back
-  python tests.py --days-ago 14  # Custom timeframe
+  python tests.py --days-ago 14  # Alternative syntax
 
 Branch Management:
   python tests.py --create-branch "Issue description"
@@ -709,8 +731,8 @@ Help:
 
 The two-phase workflow: Manual exploration finds rough boundaries,
 then automated binary search provides logarithmic precision.
-        """
-    )
+            """
+        )
     
     # Positional argument that can be numeric (commits ago) or mode (DEV/PROD/restore)
     parser.add_argument('target', nargs='?', 
@@ -887,6 +909,10 @@ then automated binary search provides logarithmic precision.
     
     # Exit code
     exit_code = 0 if summary['failed'] == 0 else 1
+    
+    # Restore original sys.argv
+    sys.argv = original_argv
+    
     sys.exit(exit_code)
 
 if __name__ == "__main__":
